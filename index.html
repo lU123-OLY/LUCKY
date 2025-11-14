@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -326,7 +328,7 @@
             color: var(--primary);
         }
         
-        /* 表格样式 */
+        /* 表格样式 - 桌面版 */
         .results-table {
             width: 100%;
             border-collapse: collapse;
@@ -377,6 +379,77 @@
             color: #ff8f00;
         }
         
+        /* 移动端表格样式 - 卡片式布局 */
+        .mobile-results {
+            display: none;
+        }
+        
+        .factor-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid var(--primary);
+        }
+        
+        .factor-card.high {
+            border-left-color: #e74c3c;
+            background-color: #ffebee;
+        }
+        
+        .factor-card.medium {
+            border-left-color: #f39c12;
+            background-color: #fff8e1;
+        }
+        
+        .factor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .factor-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--primary);
+        }
+        
+        .factor-score {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .factor-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .detail-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+        
+        .detail-value {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        
+        .factor-description {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: var(--text-light);
+            line-height: 1.4;
+        }
+        
         /* 总结和建议样式 */
         .summary, .recommendations {
             background-color: #f8f9fa;
@@ -411,6 +484,22 @@
             padding-left: 10px;
         }
         
+        /* 访问控制样式 */
+        .access-denied {
+            display: none;
+            text-align: center;
+            padding: 50px 20px;
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: var(--shadow-lg);
+            margin: 30px 0;
+        }
+        
+        .access-denied h2 {
+            color: var(--warning);
+            margin-bottom: 15px;
+        }
+        
         /* 页脚样式 */
         footer {
             text-align: center;
@@ -442,8 +531,11 @@
             }
             
             .results-table {
+                display: none;
+            }
+            
+            .mobile-results {
                 display: block;
-                overflow-x: auto;
             }
             
             h1 {
@@ -454,9 +546,18 @@
                 flex-direction: column;
                 gap: 15px;
             }
+            
+            .question-text {
+                font-size: 1.1rem;
+                padding: 12px;
+            }
+            
+            .option label {
+                padding: 12px 15px;
+            }
         }
         
-        /* 图标样式 (替代Font Awesome) */
+        /* 图标样式 */
         .icon {
             display: inline-block;
             width: 1em;
@@ -483,6 +584,16 @@
             <h1><span class="icon icon-brain"></span> SCL-90心理健康测评</h1>
             <p class="description">专业心理健康评估量表 - 本测试结果仅作为参考，不能替代专业医疗诊断</p>
         </header>
+        
+        <!-- 访问控制提示 -->
+        <div class="access-denied" id="access-denied">
+            <h2>访问受限</h2>
+            <p>您已经完成过SCL-90测试，每个用户只能进行一次测试。</p>
+            <p>如需重新测试，请联系管理员。</p>
+            <button class="btn" onclick="resetTest()" style="margin-top: 20px;">
+                <span class="icon icon-redo"></span> 重置测试（仅演示用）
+            </button>
+        </div>
         
         <!-- 用户信息表单 -->
         <div class="info-form" id="info-form">
@@ -692,15 +803,28 @@
         const resultContent = document.getElementById('result-content');
         const restartBtn = document.getElementById('restart-btn');
         const startTestBtn = document.getElementById('start-test');
+        const accessDenied = document.getElementById('access-denied');
         
         // 初始化测试
         function initTest() {
+            // 检查是否已经完成测试
+            const testCompleted = localStorage.getItem('scl90_test_completed');
+            if (testCompleted === 'true') {
+                infoForm.style.display = 'none';
+                testContainer.style.display = 'none';
+                accessDenied.style.display = 'block';
+                return;
+            }
+            
             // 事件监听
             startTestBtn.addEventListener('click', startTest);
             prevBtn.addEventListener('click', goToPrevQuestion);
             nextBtn.addEventListener('click', goToNextQuestion);
             submitBtn.addEventListener('click', submitTest);
             restartBtn.addEventListener('click', restartTest);
+            
+            // 添加版权保护
+            addCopyrightProtection();
         }
         
         // 开始测试
@@ -798,6 +922,9 @@
                 return;
             }
             
+            // 标记测试已完成
+            localStorage.setItem('scl90_test_completed', 'true');
+            
             // 计算分数并显示结果
             calculateResults();
         }
@@ -868,6 +995,7 @@
                 <h3 style="color: var(--primary); margin-bottom: 15px;"><span class="icon icon-chart-bar"></span> 各因子分详细结果</h3>
                 <p>因子分反映了您在某一特定症状维度上的严重程度。</p>
                 
+                <!-- 桌面表格 -->
                 <table class="results-table">
                     <thead>
                         <tr>
@@ -898,6 +1026,45 @@
             resultsHTML += `
                     </tbody>
                 </table>
+                
+                <!-- 移动端卡片 -->
+                <div class="mobile-results">
+            `;
+            
+            factorScores.forEach(factor => {
+                let cardClass = '';
+                if (factor.average >= 3) cardClass = 'high';
+                else if (factor.average >= 2) cardClass = 'medium';
+                
+                resultsHTML += `
+                    <div class="factor-card ${cardClass}">
+                        <div class="factor-header">
+                            <div class="factor-name">${factor.name}</div>
+                            <div class="factor-score">${factor.average.toFixed(2)}</div>
+                        </div>
+                        <div class="factor-details">
+                            <div class="detail-item">
+                                <span class="detail-label">总分</span>
+                                <span class="detail-value">${factor.score.toFixed(1)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">平均分</span>
+                                <span class="detail-value">${factor.average.toFixed(2)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">严重程度</span>
+                                <span class="detail-value">${factor.severity}</span>
+                            </div>
+                        </div>
+                        <div class="factor-description">
+                            ${factor.description}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsHTML += `
+                </div>
                 
                 <div class="summary">
                     <h3><span class="icon icon-file-medical"></span> 测评总结</h3>
@@ -932,11 +1099,53 @@
             infoForm.style.display = 'block';
             testContainer.style.display = 'none';
             resultContainer.style.display = 'none';
+            accessDenied.style.display = 'none';
             
             // 重置表单
             document.getElementById('username').value = '';
             document.getElementById('age').value = '';
             document.getElementById('gender').value = '';
+            
+            // 清除测试完成标记
+            localStorage.removeItem('scl90_test_completed');
+        }
+        
+        // 重置测试（仅用于演示）
+        function resetTest() {
+            localStorage.removeItem('scl90_test_completed');
+            location.reload();
+        }
+        
+        // 添加版权保护
+        function addCopyrightProtection() {
+            // 禁止右键菜单
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // 禁止选择文本
+            document.addEventListener('selectstart', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // 禁止复制
+            document.addEventListener('copy', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // 禁止拖拽
+            document.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // 检测是否被嵌入到iframe中
+            if (window.self !== window.top) {
+                window.top.location = window.self.location;
+            }
         }
         
         // 初始化
